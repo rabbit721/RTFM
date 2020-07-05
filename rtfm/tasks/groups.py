@@ -11,9 +11,14 @@ from rtfm.dynamics import monster as M, descriptor as D, item as I, element as t
 from rtfm.tasks.room import RoomTask
 from rtfm import featurizer as F, utils
 from rtfm.tasks import groups_templates
-
+import pickle
 
 ALL_TYPES = [types.Cold, types.Fire, types.Lightning, types.Poison]
+
+'''
+disabled:
+- random.Random(0).shuffle(all_assignments)
+- random.choice(self.group_assignment)
 
 
 def generate_all(all_monsters, all_groups, all_modifiers):
@@ -56,9 +61,21 @@ def generate_all(all_monsters, all_groups, all_modifiers):
         for mm in modifier_assignments:
             all_assignments.append((m, mm))
     all_assignments.sort()
+    print("######## fst assign #########", all_assignments[0])
+    # random.Random(0).shuffle(all_assignments)
 
-    random.Random(0).shuffle(all_assignments)
+    with open('all_assign_3.pickle', 'wb+') as f:
+        pickle.dump(all_assignments, f)
 
+    n = len(all_assignments) // 2
+    train = all_assignments[:n]
+    dev = all_assignments[n:]
+    return train, dev
+'''
+
+def generate_all(all_monsters, all_groups, all_modifiers):
+    with open('all_assign_1.pickle', 'rb') as f:
+        all_assignments = pickle.load(f)
     n = len(all_assignments) // 2
     train = all_assignments[:n]
     dev = all_assignments[n:]
@@ -195,7 +212,7 @@ class Groups(RoomTask):
         self.modifier_assignment.clear()
 
         # sample dynamics
-        sample_group, sample_mod = random.choice(self.configs)
+        sample_group, sample_mod = self.configs[0] # random.choice(self.configs)
         for group, monsters in sorted(list(sample_group)):
             self.group_assignment.append((group, monsters))
         for element, modifiers in sorted(list(sample_mod)):
@@ -203,11 +220,11 @@ class Groups(RoomTask):
 
         self.agent = self.place_object(self.Agent())
 
-        self.target_group, target_monsters = random.choice(self.group_assignment)
+        self.target_group, target_monsters = self.group_assignment[0] #random.choice(self.group_assignment)
 
         # choose a target element
-        target_element, target_modifiers = random.choice(self.modifier_assignment)
-
+        print("################### I'm Here #####################")
+        target_element, target_modifiers = self.modifier_assignment[0] # random.choice(self.modifier_assignment)
         # choose a target monster
         self.target_monster = self.place_object(self.Monster(target_element, name=random.choice(target_monsters)))
 
@@ -322,14 +339,16 @@ class NLGroups(Groups):
         return words[:i] + self.tokenize(replace_to) + words[i+1:]
 
     def get_beat_utterance(self, element, modifiers):
-        t = random.choice(groups_templates.beat_utterance)
+        t = groups_templates.beat_utterance[0]
+        # t = random.choice(groups_templates.beat_utterance)
         t = self.tokenize(t)
         t = self.split_utterance(t, 'element', element)
         t = self.split_utterance(t, 'modifiers', ', '.join(modifiers))
         return t
 
     def get_group_utterance(self, group, monsters):
-        t = random.choice(groups_templates.group_utterance)
+        t = groups_templates.group_utterance[0]
+        # t = random.choice(groups_templates.group_utterance)
         t = self.tokenize(t)
         t = self.split_utterance(t, 'group', group)
         t = self.split_utterance(t, 'monsters', ', '.join(monsters))
